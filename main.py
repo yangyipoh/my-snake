@@ -2,34 +2,59 @@ import pygame
 import random
 
 
+# --------------------------------------- Board Class -----------------------------------------------------------
 class Board:
     def __init__(self):
-        self.board = (17, 15)
-        self.snake = Snake()
-        self.food = Food()
-        self.score = Score()
+        self.board = (17, 15)   # Window size
+        self.snake = Snake()    # Snake
+        self.food = Food()      # Food
+        self.score = Score()    # Score
 
+    '''
+    Updates the board with xdir and ydir
+
+    xdir: x direction
+    ydir: y direction
+    surface: pygame surface to draw on
+
+    returns 'running' if it's still running, 'win' if we cannot generate food, 'lose' if the snake dies
+    '''
     def update_board(self, xdir, ydir, surface):
+        # if the snake is not moving
         if xdir == 0 and ydir == 0:
             self.draw(surface)
             return 'running'
+
+        # check where the head will be at the next instant
         collision, snake_next_pos = self.snake.get_next_head(xdir, ydir, self.board[0], self.board[1])
+
+        # if the snake head is on the food
         if snake_next_pos == self.food.get_food_pos():
+            # grow the snake 
             self.snake.grow(snake_next_pos)
             self.score.update_score()
             self.draw(surface)
+
+            # generate the food if possible
             if self.food.gen_food(self.snake.get_body(), self.board[0], self.board[1]):
                 return 'running'
             else:
                 self.win(surface)
                 return 'win'
+        
+        # if there's a collision
         elif collision:
             self.game_over(surface)
             return 'lose'
+
+        # else, move the snake normally 
         self.snake.update_pos(snake_next_pos)
         self.draw(surface)
         return 'running'
 
+    '''
+    draw the game
+    '''
     def draw(self, surface):
         # score
         font_colour = (255, 255, 255)
@@ -61,6 +86,9 @@ class Board:
             else:
                 pygame.draw.rect(surface, snake_colour_body, pygame.Rect(snake_xpos, snake_ypos, 44, 44))
 
+    '''
+    draw the game when the snake dies
+    '''
     def game_over(self, surface):
         # score
         font_colour = (255, 255, 255)
@@ -89,6 +117,9 @@ class Board:
         reset_text_rect = reset_text.get_rect(center=(450, 528))
         screen.blit(reset_text, reset_text_rect)
 
+    '''
+    draw the game when you win the game
+    '''
     def win(self, surface):
         # score
         font_colour = (255, 255, 255)
@@ -118,9 +149,10 @@ class Board:
         screen.blit(reset_text, reset_text_rect)
 
 
+# -------------------------------------------------- Snake Class -----------------------------------------------------------------------
 class Snake:
     def __init__(self):
-        self.pos = [(2, 7), (3, 7), (4, 7)]
+        self.pos = [(2, 7), (3, 7), (4, 7)] # [tail, ......, head]
 
     def get_snake_length(self):
         return len(self.pos)
@@ -135,7 +167,7 @@ class Snake:
         cur_head = self.get_head()
         new_head = (cur_head[0] + xdir, cur_head[1] + ydir)
 
-        # check for collisions
+        # check for collisions (new_head is in body || new_head is out of bound)
         if new_head in self.pos or new_head[0] >= xbound or new_head[1] >= ybound or new_head[0] < 0 or new_head[1] < 0:
             return True, new_head
         return False, new_head
@@ -156,7 +188,7 @@ class Food:
         return self.pos
 
     def gen_food(self, snake_body, xbound, ybound):
-        food_pos = []
+        food_pos = []   # all the possible place that the food can be generated
         for i in range(xbound):
             for j in range(ybound):
                 cur_pos = (i, j)
@@ -168,6 +200,7 @@ class Food:
         return True
 
 
+# ------------------------------------------ Score Class ---------------------------------------------
 class Score:
     def __init__(self):
         self.score = 0
